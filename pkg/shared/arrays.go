@@ -128,6 +128,6 @@ func Reverse[T any](slice []T) []T {
 	return rev
 }
 
-func Last[T any](slice []T) T {
-	return slice[len(slice)-1]
+func LastRef[T any](slice []T) *T {
+	return &slice[len(slice)-1]
 }

@@ -148,7 +148,7 @@ func Solution() {
 	topLine := make([]string, colNum)
 	for i := 0; i < len(topLine); i++ {
 		col := strconv.Itoa(i + 1)
-		topLine[i] = shared.Last(afterMoveMap[col])
+		topLine[i] = shared.LastRef(afterMoveMap[col])
 	}
 
 	fmt.Println(topLine, strings.Join(topLine, ""))
