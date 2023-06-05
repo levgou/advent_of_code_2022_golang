@@ -117,3 +117,17 @@ func ChunkSlice[T any](slice []T, chunkSize int) [][]T {
 
 	return chunks
 }
+
+func Reverse[T any](slice []T) []T {
+	rev := make([]T, len(slice))
+
+	for i := len(slice) - 1; i >= 0; i-- {
+		rev[len(slice)-i-1] = slice[i]
+	}
+
+	return rev
+}
+
+func Last[T any](slice []T) T {
+	return slice[len(slice)-1]
+}
