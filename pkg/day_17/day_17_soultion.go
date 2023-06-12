@@ -3,7 +3,6 @@ package day_17
 import (
 	"advent_of_code/pkg/shared"
 	"fmt"
-	"golang.org/x/exp/slices"
 	"log"
 )
 
@@ -28,7 +27,8 @@ type Shape struct {
 var Shapes = []Shape{
 	{
 		[][]rune{{'@', '@', '@', '@'}},
-		'🟥',
+		//'🟥',
+		'#',
 	},
 	{
 		[][]rune{
@@ -36,7 +36,8 @@ var Shapes = []Shape{
 			{'@', '@', '@'},
 			{' ', '@', ' '},
 		},
-		'🟨',
+		//'🟨',
+		'#',
 	},
 	{
 		[][]rune{
@@ -44,7 +45,9 @@ var Shapes = []Shape{
 			{'@', ' ', ' '},
 			{'@', ' ', ' '},
 		},
-		'🟩',
+		//'🟩',
+
+		'#',
 	},
 	{
 		[][]rune{
@@ -53,14 +56,16 @@ var Shapes = []Shape{
 			{'@'},
 			{'@'},
 		},
-		'🟦',
+		//'🟦',
+		'#',
 	},
 	{
 		[][]rune{
 			{'@', '@'},
 			{'@', '@'},
 		},
-		'🟪',
+		//'🟪',
+		'#',
 	},
 }
 
@@ -88,8 +93,21 @@ type Point struct {
 	y int
 }
 
+func trimWorld(level int) {
+	World = World[level:]
+}
+
 func isRock(char rune) bool {
-	return slices.Index(Rocks, char) != -1
+	return char == '#'
+
+	for i := 0; i < len(Rocks); i++ {
+		if char == Rocks[i] {
+			return true
+		}
+	}
+	return false
+
+	//return slices.Index(Rocks, char) != -1
 }
 
 func findHighest() int {
@@ -102,6 +120,28 @@ func findHighest() int {
 	}
 
 	return 0
+}
+
+func findClosedLevel() int {
+	found := false
+
+	for row := len(World) - 1; row > 0; row-- {
+		found = true
+		for col := 0; col < len(World[row]); col++ {
+			if !isRock(World[row][col]) {
+				//&& !isRock(World[row-1][col])
+				//{
+				found = false
+				break
+			}
+		}
+
+		if found {
+			return row - 1
+		}
+	}
+
+	return -1
 }
 
 func removeShape(shape [][]rune, topLeft Point) {
@@ -182,10 +222,23 @@ func moveShapeHoriz(shape [][]rune, topLeft Point, direction rune) Point {
 	return afterMove
 }
 
-func run(jets string, rockCount int) {
+type Memo struct {
+	shape    int
+	jet      int
+	horizPos int
+}
+
+type MemoVal struct {
+	idx    int
+	height int
+}
+
+func run(jets string, rockCount int) int {
 	curShape := 0
 	curJet := 0
 	highest := -1
+	linesRemoved := 0
+	memo := make(map[Memo]MemoVal)
 
 	for i := 0; i < rockCount; i++ {
 		shape := Shapes[curShape]
@@ -215,8 +268,38 @@ func run(jets string, rockCount int) {
 
 			if afterDown == afterHoriz {
 				paintShapeStatic(shape, afterDown)
+
+				// todo: this was an attempt to save on memory
+				//blockLevel := findClosedLevel()
+				//if blockLevel > 5 {
+				//printWorld()
+				//println("block level", blockLevel)
+				//trimWorld(blockLevel)
+				//linesRemoved += blockLevel
+				//printWorld()
+				//}
+
 				highest = findHighest()
 				//fmt.Println("highest", highest)
+
+				// We are detection a cycle
+				// if we find that cur shape finished in the same place horiz
+				// and the jet idx is the same, we check how many rocks passed since
+				// in case what is left is a multiple of this, we calc the cycle height gain
+				// and multiply it by (what's left) / (cycle length)
+				stt := Memo{curShape, curJet, afterDown.x}
+				if val, ok := memo[stt]; ok {
+					idxDiff := i - val.idx
+					heightGain := highest - val.height
+					rocksRemain := rockCount - i - 1
+					if rocksRemain%idxDiff == 0 {
+						fmt.Println("Rocks left are a mult of memo H", i, idxDiff, rocksRemain, heightGain, rocksRemain/idxDiff)
+						return highest + (rocksRemain/idxDiff)*heightGain + 1
+					}
+				} else {
+					memo[stt] = MemoVal{i, highest}
+				}
+
 				break
 
 			} else {
@@ -231,6 +314,8 @@ func run(jets string, rockCount int) {
 		//printWorld()
 		curShape = (curShape + 1) % len(Shapes)
 	}
+
+	return linesRemoved + highest + 1
 }
 
 func printWorld() {
@@ -253,24 +338,6 @@ func printWorld() {
 	}
 
 	println("     + - - - - - - - +\n")
-
-	return
-
-	for i, row := range World {
-		fmt.Printf("%05d| ", i)
-		for _, char := range row {
-			if char == ' ' {
-				char = '.'
-			} else if char == MovingRock {
-				char = '💠'
-			}
-			print(string(char))
-			if char == '.' {
-				print(" ")
-			}
-		}
-		println("|")
-	}
 }
 
 func Solution() {
@@ -281,7 +348,9 @@ func Solution() {
 	}
 
 	jets := lines[0]
-	run(jets, 2022)
 
+	//1_000_000_000_000
+
+	println(run(jets, 1_000_000_000_000))
 	//printWorld()
 }
